@@ -1,0 +1,66 @@
+import streamlit as st
+import itertools
+import pandas as pd
+
+def generate_truth_table(variables, expression):
+    """Generate a truth table for the given variables and logical expression."""
+    rows = []
+    for values in itertools.product([False, True], repeat=len(variables)):
+        context = dict(zip(variables, values))
+        result = eval(expression, {}, context)
+        rows.append(list(values) + [result])
+    
+    columns = variables + [expression]
+    return pd.DataFrame(rows, columns=columns)
+
+def evaluate_prospect(attributes, criteria):
+    """Evaluate prospect based on user-input attributes."""
+    return eval(criteria, {}, attributes)
+
+def check_equivalence(expr1, expr2, variables):
+    """Check if two logical expressions are equivalent."""
+    table1 = generate_truth_table(variables, expr1)
+    table2 = generate_truth_table(variables, expr2)
+    return table1.iloc[:, -1].equals(table2.iloc[:, -1])
+
+# Streamlit App
+st.title("Basketball Prospect Evaluator with Equivalence Check")
+
+# Section 1: Truth Table Generator
+st.header("Truth Table Generator")
+criteria = st.text_input(
+    "Enter a logical expression (e.g., Shooting and Defense or WorkEthic):", 
+    "Shooting and Defense or WorkEthic"
+)
+
+variables = ["Shooting", "Defense", "WorkEthic"]
+
+if st.button("Generate Truth Table"):
+    truth_table = generate_truth_table(variables, criteria)
+    st.write("### Truth Table")
+    st.dataframe(truth_table)
+
+# Section 2: Equivalence Checker
+st.header("Logical Equivalence Checker")
+expr1 = st.text_input("Enter the first logical expression:", "Shooting and Defense")
+expr2 = st.text_input("Enter the second logical expression:", "Defense or WorkEthic")
+
+if st.button("Check Equivalence"):
+    equivalence = check_equivalence(expr1, expr2, variables)
+    st.write(f"Are the expressions equivalent? {'Yes' if equivalence else 'No'}")
+
+# Section 3: Prospect Evaluation
+st.header("Evaluate a Prospect")
+st.write("### Enter Prospect Attributes")
+
+# Input attributes for evaluation
+prospect = {}
+for var in variables:
+    prospect[var] = st.radio(f"{var}:", ["True", "False"]) == "True"
+
+if st.button("Evaluate Prospect"):
+    try:
+        result = evaluate_prospect(prospect, criteria)
+        st.success(f"The prospect is {'Eligible' if result else 'Not Eligible'} based on the criteria.")
+    except Exception as e:
+        st.error(f"Error: {e}")
